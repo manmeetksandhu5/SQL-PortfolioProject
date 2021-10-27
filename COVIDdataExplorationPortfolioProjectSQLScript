@@ -1,0 +1,118 @@
+-- Select all data
+
+SELECT * FROM CovidDeaths; 					-- table 1
+
+SELECT * FROM CovidVaccinations; 				--- table 2
+
+-- Select data we will be using
+
+
+SELECT location, date, total_cases,total_deaths, population 
+FROM CovidDeaths 
+ORDER BY 1,2;
+
+
+-- total cases vs total deaths
+
+
+SELECT location, date, total_cases,total_deaths, 
+CAST (total_deaths AS FLOAT) / CAST(total_cases AS FLOAT )*100 AS death_percentage
+FROM CovidDeaths
+WHERE location = 'United States'
+ORDER BY 3 DESC;
+
+	
+-- total cases vs population
+
+SELECT location, date, total_cases, 
+population,
+CAST (total_cases AS FLOAT) /CAST (population AS FLOAT) *100 AS populationVScases
+FROM CovidDeaths
+WHERE location = 'United States'
+ORDER BY 3 DESC;
+
+
+-- countries with highest infection rate
+
+
+SELECT location ,population, MAX(total_cases) AS HighestInfectionRate
+FROM CovidDeaths
+GROUP BY location 
+ORDER BY 3
+
+
+-- countries with highest infection rate compared to population
+
+
+SELECT location ,population, MAX(total_cases) AS HighestInfectionRate,
+MAX(CAST(total_cases AS FLOAT) /CAST(population AS FLOAT))*100 AS maximumPercentageCases 
+FROM CovidDeaths
+GROUP BY location , population 
+ORDER BY 4 DESC;
+
+-- countries with highest death rate 
+
+SELECT  location, max(CAST (total_deaths AS INT)) AS total_death_count
+FROM CovidDeaths
+WHERE continent NOTNULL 
+GROUP BY location 
+ORDER BY 2 DESC ;
+
+
+-- Analysis by continents
+
+SELECT  continent , max(CAST (total_deaths AS INT)) AS total_death_count
+FROM CovidDeaths
+WHERE continent NOTNULL 
+GROUP BY continent 
+ORDER BY 2  ;
+
+
+-- Analysis by continents with highest death count
+
+SELECT  continent , max(CAST (total_deaths AS INT)) AS death_count,
+(CAST(total_deaths AS FLOAT)/CAST(population AS FLOAT))*100 AS deathpercentagepercontinent 
+FROM CovidDeaths
+WHERE continent NOTNULL
+GROUP BY continent 
+ORDER BY 2  ;
+
+
+
+-- Global numbers
+
+SELECT date, SUM(total_cases)
+FROM CovidDeaths
+GROUP BY date 
+ORDER BY 2 DESC;
+
+
+-- Global numbers-death percentage
+
+SELECT SUM(total_cases) AS totalcases, SUM(new_deaths) AS newdeaths,
+(SUM(new_deaths)/sum(new_cases))*100 AS deathpercentage
+FROM CovidDeaths
+ORDER BY 1 DESC;
+
+
+
+-- table Joins 
+
+SELECT * FROM CovidDeaths cd 
+JOIN CovidVaccinations cv 
+	ON cd.location = cv.location 
+	AND cd.date = cv.date 
+LIMIT 10;
+
+
+-- total populations vs vaccination
+
+SELECT cd.continent , cd.location , cd.date , cd.population , cv.new_vaccinations , 
+SUM (cv.new_vaccinations) OVER (PARTITION by cd.location ORDER BY cd.location, cd.date) AS peoplevaccinated
+FROM CovidDeaths cd 
+JOIN CovidVaccinations cv 
+	ON cd.location = cv.location 
+	AND cd.date = cv.date 
+WHERE cd.continent NOTNULL
+AND cd.location like 'united s%'
+LIMIT10;
